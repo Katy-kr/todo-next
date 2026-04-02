@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react'
 
 export type Priority = 'high' | 'normal' | 'low'
 export type Filter = 'all' | 'active' | 'completed'
@@ -37,10 +37,10 @@ const PRIORITY_ORDER: Record<Priority, number> = { high: 0, normal: 1, low: 2 }
 
 export function TodoProvider({ children }: { children: ReactNode }) {
   const [todos, setTodos] = useState<Todo[]>([])
-  const [nextId, setNextId] = useState(1)
   const [filter, setFilter] = useState<Filter>('all')
   const [dark, setDark] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const nextIdRef = useRef(1)
 
   useEffect(() => {
     try {
@@ -48,7 +48,7 @@ export function TodoProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const data = JSON.parse(raw)
         setTodos(data.todos ?? [])
-        setNextId(data.nextId ?? 1)
+        nextIdRef.current = data.nextId ?? 1
       }
     } catch { /* ignore */ }
 
@@ -59,8 +59,8 @@ export function TodoProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!mounted) return
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ todos, nextId }))
-  }, [todos, nextId, mounted])
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ todos, nextId: nextIdRef.current }))
+  }, [todos, mounted])
 
   useEffect(() => {
     if (!mounted) return
@@ -70,9 +70,9 @@ export function TodoProvider({ children }: { children: ReactNode }) {
   const addTodo = useCallback((text: string, priority: Priority) => {
     const trimmed = text.trim()
     if (!trimmed) return
-    setTodos(prev => [{ id: nextId, text: trimmed, done: false, priority, createdAt: Date.now() }, ...prev])
-    setNextId(n => n + 1)
-  }, [nextId])
+    const id = nextIdRef.current++
+    setTodos(prev => [{ id, text: trimmed, done: false, priority, createdAt: Date.now() }, ...prev])
+  }, [])
 
   const toggleTodo = useCallback((id: number) => {
     setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
