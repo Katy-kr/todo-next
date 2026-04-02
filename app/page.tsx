@@ -1,5 +1,10 @@
-import TodoApp from './components/TodoApp'
+import { TodoProvider } from '@/app/context/TodoContext'
+import TodoBoard from '@/app/components/TodoBoard'
 
 export default function Page() {
-  return <TodoApp />
+  return (
+    <TodoProvider>
+      <TodoBoard />
+    </TodoProvider>
+  )
 }
